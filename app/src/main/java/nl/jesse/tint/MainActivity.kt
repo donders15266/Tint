@@ -483,6 +483,11 @@ fun UpdateSection() {
     val accent = Color(ctx.prefs.accent)
 
     fun check() {
+        // Zonder token geeft GitHub voor een privé-repository geen enkele release terug
+        if (ctx.prefs.updateToken.isBlank()) {
+            status = "Vul eerst je GitHub-token in"
+            return
+        }
         busy = true
         status = "Zoeken…"
         scope.launch {
@@ -491,7 +496,7 @@ fun UpdateSection() {
             r.onSuccess { rel ->
                 release = rel?.takeIf { it.versionCode > current }
                 status = when {
-                    rel == null -> "Nog geen release gevonden"
+                    rel == null -> "Geen release gevonden: kan het token deze repository lezen?"
                     rel.versionCode > current -> "Versie ${rel.versionCode} is beschikbaar"
                     else -> "Je hebt de nieuwste versie"
                 }
