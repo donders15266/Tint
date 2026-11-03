@@ -26,13 +26,18 @@ object Updater {
     fun currentVersion(context: Context): Long =
         context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
 
-    /** Haalt de nieuwste release op. Niet op de hoofdthread aanroepen. */
-    fun latest(): Release? {
+    /**
+     * Haalt de nieuwste release op. Niet op de hoofdthread aanroepen.
+     * De repository is privé: daarom gaat er een alleen-lezen token mee.
+     */
+    fun latest(token: String): Release? {
         val conn = URL("https://api.github.com/repos/$REPO/releases/latest").openConnection() as HttpURLConnection
         conn.setRequestProperty("Accept", "application/vnd.github+json")
+        if (token.isNotBlank()) conn.setRequestProperty("Authorization", "Bearer ${token.trim()}")
         conn.connectTimeout = 10_000
         conn.readTimeout = 10_000
         try {
+            if (conn.responseCode == 401) error("token ongeldig of verlopen")
             if (conn.responseCode == 404) return null
             if (conn.responseCode !in 200..299) error("GitHub antwoordde met ${conn.responseCode}")
             val json = JSONObject(conn.inputStream.bufferedReader().readText())
@@ -41,7 +46,8 @@ object Updater {
             var url: String? = null
             for (i in 0 until assets.length()) {
                 val a = assets.getJSONObject(i)
-                if (a.getString("name").endsWith(".apk")) { url = a.getString("browser_download_url"); break }
+                // De API-link van het bestand werkt ook voor privé-repositories
+                if (a.getString("name").endsWith(".apk")) { url = a.getString("url"); break }
             }
             return Release(code, json.optString("name", "v$code"), json.optString("body", ""), url ?: return null)
         } finally {
@@ -50,13 +56,18 @@ object Updater {
     }
 
     /** Downloadt de APK naar de cache en geeft het bestand terug. [progress] krijgt 0..1. */
-    fun download(context: Context, release: Release, progress: (Float) -> Unit): File {
+    fun download(context: Context, release: Release, token: String, progress: (Float) -> Unit): File {
         val file = File(context.cacheDir, "update.apk")
         var url = URL(release.apkUrl)
         // GitHub stuurt door naar een downloadserver: volg dat zelf, ook naar een ander domein
         repeat(5) {
             val conn = url.openConnection() as HttpURLConnection
             conn.instanceFollowRedirects = false
+            // Alleen GitHub zelf krijgt het token; de downloadserver krijgt een tijdelijke link
+            if (url.host == "api.github.com") {
+                conn.setRequestProperty("Accept", "application/octet-stream")
+                if (token.isNotBlank()) conn.setRequestProperty("Authorization", "Bearer ${token.trim()}")
+            }
             conn.connectTimeout = 15_000
             conn.readTimeout = 30_000
             val code = conn.responseCode

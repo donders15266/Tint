@@ -1,4 +1,4 @@
-﻿package nl.jesse.tint
+package nl.jesse.tint
 
 import android.app.StatusBarManager
 import android.app.WallpaperManager
@@ -21,6 +21,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -480,7 +486,7 @@ fun UpdateSection() {
         busy = true
         status = "Zoeken…"
         scope.launch {
-            val r = withContext(Dispatchers.IO) { runCatching { Updater.latest() } }
+            val r = withContext(Dispatchers.IO) { runCatching { Updater.latest(ctx.prefs.updateToken) } }
             busy = false
             r.onSuccess { rel ->
                 release = rel?.takeIf { it.versionCode > current }
@@ -504,7 +510,7 @@ fun UpdateSection() {
         scope.launch {
             val r = withContext(Dispatchers.IO) {
                 runCatching {
-                    val apk = Updater.download(ctx, rel) { f -> status = "Downloaden… ${(f * 100).toInt()}%" }
+                    val apk = Updater.download(ctx, rel, ctx.prefs.updateToken) { f -> status = "Downloaden… ${(f * 100).toInt()}%" }
                     status = "Installeren…"
                     Updater.install(ctx.applicationContext, apk)
                 }
@@ -514,8 +520,46 @@ fun UpdateSection() {
         }
     }
 
-    Section("Updates", "Nieuwe versies komen van GitHub (${Updater.REPO}). Android vraagt altijd om bevestiging voordat er iets wordt geïnstalleerd.") {
+    var editing by remember { mutableStateOf(false) }
+    var tokenText by remember { mutableStateOf("") }
+    val hasToken = ctx.prefs.updateToken.isNotBlank()
+    Section(
+        "Updates",
+        "Nieuwe versies komen uit je privé-repository ${Updater.REPO} op GitHub. Daarvoor is een alleen-lezen token nodig " +
+            "(GitHub › Settings › Developer settings › Fine-grained tokens, alleen deze repository, Contents: Read-only). " +
+            "Android vraagt altijd om bevestiging voordat er iets wordt geïnstalleerd.",
+    ) {
         Cell("Geïnstalleerde versie", "$current")
+        Cell(
+            "GitHub-token", if (hasToken) "Ingesteld" else "Niet ingesteld",
+            valueColor = if (hasToken) Ui.Green else accent, chevron = true,
+            onClick = { editing = !editing; tokenText = "" },
+        )
+        if (editing) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(12.dp)).background(Ui.Fill).padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    if (tokenText.isEmpty()) Text("github_pat_…", color = Ui.Tertiary, fontSize = 15.sp)
+                    BasicTextField(
+                        tokenText, { tokenText = it }, singleLine = true,
+                        textStyle = TextStyle(color = Ui.Label, fontSize = 15.sp),
+                        cursorBrush = SolidColor(accent),
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Text(
+                    "Bewaar", color = accent, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 12.dp).clickable {
+                        ctx.prefs.updateToken = tokenText.trim()
+                        editing = false
+                        status = "Token bewaard"
+                    },
+                )
+            }
+        }
         Cell("Status", subtitle = status, divider = false)
     }
     val rel = release

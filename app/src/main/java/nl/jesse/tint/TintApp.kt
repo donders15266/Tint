@@ -81,6 +81,8 @@ class Prefs(context: Context) {
     var favIcons by bool("favIcons", false)
     var homeHint by bool("homeHint", true)
     var homeDim by int("homeDim", 10) // procent verduistering over de wallpaper
+    /** Alleen-lezen GitHub-token om updates uit de privé-repository te halen. */
+    var updateToken by string("updateToken", "")
     /** Widgets op het startscherm: "id:hoogte" gescheiden door puntkomma's, hoogte 0–2. */
     var widgets by string("widgets", "")
 
