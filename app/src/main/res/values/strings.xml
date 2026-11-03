@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Tint</string>
+    <string name="home_name">Tint Start</string>
+    <string name="live_name">Tint Dots</string>
+    <string name="live_description">Bewegende dot-matrix in je accentkleur</string>
+    <string name="line_name">Tint voortgangslijn</string>
+    <string name="tile_accent">Accent</string>
+    <string name="tile_style">Stijl</string>
+    <string name="tile_line">Voortgangslijn</string>
+</resources>

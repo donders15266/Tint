@@ -1,0 +1,54 @@
+# Bouwt bij elke wijziging op main een ondertekende APK en publiceert die als GitHub Release.
+# De app zoekt in Info › Updates naar de nieuwste release (tag v<versionCode>).
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Dezelfde sleutel als de geïnstalleerde app, anders weigert Android de update
+      - name: Ondertekensleutel
+        env:
+          SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
+        run: |
+          test -n "$SIGNING_KEYSTORE" || { echo "Secret SIGNING_KEYSTORE ontbreekt"; exit 1; }
+          mkdir -p ~/.android
+          echo "$SIGNING_KEYSTORE" | base64 -d > ~/.android/debug.keystore
+
+      - name: Versienummer
+        run: |
+          echo "TINT_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "TINT_VERSION_NAME=1.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Bouwen
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Release publiceren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk Tint.apk
+          git log -1 --pretty=%B > notes.txt
+          gh release create "v$TINT_VERSION_CODE" Tint.apk --title "Tint $TINT_VERSION_NAME" --notes-file notes.txt
