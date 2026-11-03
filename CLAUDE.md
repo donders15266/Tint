@@ -23,5 +23,5 @@ Android-app (Kotlin, Jetpack Compose) waarmee de gebruiker het uiterlijk van een
 - Lokaal: `./gradlew assembleRelease` (APK in `app/build/outputs/apk/release/`).
 - Pull requests worden gecontroleerd door `.github/workflows/check.yml`.
 - Elke push naar `main` bouwt een ondertekende APK en maakt een GitHub Release `v<versionCode>` met `Tint.apk` (`.github/workflows/release.yml`). De app vindt die in Info › Updates.
-- De repository is privé: de app haalt releases op met een alleen-lezen token dat de gebruiker in Info › Updates invult (`Prefs.updateToken`).
+- De repository is openbaar: de app haalt releases zonder inloggen op. Zet er dus nooit geheimen in; de ondertekensleutel staat alleen als secret.
 - De ondertekensleutel staat als secret `SIGNING_KEYSTORE` (base64) in de repository. Zonder dezelfde sleutel kan de update niet over de geïnstalleerde app heen.

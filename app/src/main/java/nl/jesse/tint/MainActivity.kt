@@ -483,11 +483,6 @@ fun UpdateSection() {
     val accent = Color(ctx.prefs.accent)
 
     fun check() {
-        // Zonder token geeft GitHub voor een privé-repository geen enkele release terug
-        if (ctx.prefs.updateToken.isBlank()) {
-            status = "Vul eerst je GitHub-token in"
-            return
-        }
         busy = true
         status = "Zoeken…"
         scope.launch {
@@ -496,7 +491,7 @@ fun UpdateSection() {
             r.onSuccess { rel ->
                 release = rel?.takeIf { it.versionCode > current }
                 status = when {
-                    rel == null -> "Geen release gevonden: kan het token deze repository lezen?"
+                    rel == null -> "Nog geen release gevonden"
                     rel.versionCode > current -> "Versie ${rel.versionCode} is beschikbaar"
                     else -> "Je hebt de nieuwste versie"
                 }
@@ -525,46 +520,11 @@ fun UpdateSection() {
         }
     }
 
-    var editing by remember { mutableStateOf(false) }
-    var tokenText by remember { mutableStateOf("") }
-    val hasToken = ctx.prefs.updateToken.isNotBlank()
     Section(
         "Updates",
-        "Nieuwe versies komen uit je privé-repository ${Updater.REPO} op GitHub. Daarvoor is een alleen-lezen token nodig " +
-            "(GitHub › Settings › Developer settings › Fine-grained tokens, alleen deze repository, Contents: Read-only). " +
-            "Android vraagt altijd om bevestiging voordat er iets wordt geïnstalleerd.",
+        "Nieuwe versies komen uit github.com/${Updater.REPO}. Android vraagt altijd om bevestiging voordat er iets wordt geïnstalleerd.",
     ) {
         Cell("Geïnstalleerde versie", "$current")
-        Cell(
-            "GitHub-token", if (hasToken) "Ingesteld" else "Niet ingesteld",
-            valueColor = if (hasToken) Ui.Green else accent, chevron = true,
-            onClick = { editing = !editing; tokenText = "" },
-        )
-        if (editing) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(12.dp)).background(Ui.Fill).padding(horizontal = 12.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    if (tokenText.isEmpty()) Text("github_pat_…", color = Ui.Tertiary, fontSize = 15.sp)
-                    BasicTextField(
-                        tokenText, { tokenText = it }, singleLine = true,
-                        textStyle = TextStyle(color = Ui.Label, fontSize = 15.sp),
-                        cursorBrush = SolidColor(accent),
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                Text(
-                    "Bewaar", color = accent, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 12.dp).clickable {
-                        ctx.prefs.updateToken = tokenText.trim()
-                        editing = false
-                        status = "Token bewaard"
-                    },
-                )
-            }
-        }
         Cell("Status", subtitle = status, divider = false)
     }
     val rel = release

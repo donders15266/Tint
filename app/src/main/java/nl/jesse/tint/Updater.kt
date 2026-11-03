@@ -28,7 +28,7 @@ object Updater {
 
     /**
      * Haalt de nieuwste release op. Niet op de hoofdthread aanroepen.
-     * De repository is privé: daarom gaat er een alleen-lezen token mee.
+     * De repository is openbaar; een token is alleen nodig als hij ooit weer privé wordt.
      */
     fun latest(token: String): Release? {
         val conn = URL("https://api.github.com/repos/$REPO/releases/latest").openConnection() as HttpURLConnection
