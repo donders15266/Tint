@@ -20,13 +20,24 @@ android {
         buildConfigField("String", "UPDATE_REPO", "\"${project.property("tint.updateRepo")}\"")
     }
 
+    // Altijd dezelfde sleutel: anders weigert Android een update over de geïnstalleerde app.
+    // Op GitHub Actions wijst TINT_KEYSTORE naar de sleutel uit het secret; lokaal is het de debug-sleutel van deze pc.
+    signingConfigs {
+        create("tint") {
+            storeFile = file(System.getenv("TINT_KEYSTORE") ?: "${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // R8 maakt Compose merkbaar sneller dan in de debug-build
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("tint")
         }
     }
     compileOptions {

@@ -1,4 +1,4 @@
-# Controleert pull requests: bouwt de app zonder iets te publiceren.
+# Controleert pull requests: bouwt de app (debug, zonder ondertekensleutel) zonder iets te publiceren.
 name: Check
 
 on:
@@ -16,4 +16,4 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon

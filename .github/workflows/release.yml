@@ -32,9 +32,9 @@ jobs:
           SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
         run: |
           test -n "$SIGNING_KEYSTORE" || { echo "Secret SIGNING_KEYSTORE ontbreekt"; exit 1; }
-          mkdir -p ~/.android
           # Regeleinden en spaties weghalen: het secret is op Windows gezet
-          printf '%s' "$SIGNING_KEYSTORE" | tr -d '[:space:]' | base64 -d > ~/.android/debug.keystore
+          printf '%s' "$SIGNING_KEYSTORE" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/tint.keystore"
+          echo "TINT_KEYSTORE=$RUNNER_TEMP/tint.keystore" >> "$GITHUB_ENV"
 
       - name: Versienummer
         run: |
