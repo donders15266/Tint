@@ -33,8 +33,8 @@ jobs:
         run: |
           test -n "$SIGNING_KEYSTORE" || { echo "Secret SIGNING_KEYSTORE ontbreekt"; exit 1; }
           mkdir -p ~/.android
-          printf "%s" "$SIGNING_KEYSTORE" | tr -d "
- " | base64 -d > ~/.android/debug.keystore
+          # Regeleinden en spaties weghalen: het secret is op Windows gezet
+          printf '%s' "$SIGNING_KEYSTORE" | tr -d '[:space:]' | base64 -d > ~/.android/debug.keystore
 
       - name: Versienummer
         run: |
